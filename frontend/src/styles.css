@@ -1,0 +1,273 @@
+:root {
+  color: #16213a;
+  background: #f5f7fb;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(88, 101, 242, 0.12), transparent 32rem),
+    #f5f7fb;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.page-shell {
+  width: min(1120px, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: 4rem 0;
+}
+
+.hero {
+  max-width: 700px;
+  margin-bottom: 2rem;
+}
+
+.eyebrow,
+.step {
+  margin: 0 0 0.4rem;
+  color: #5865f2;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  margin-bottom: 0.6rem;
+  font-size: clamp(2.7rem, 8vw, 5.4rem);
+  letter-spacing: -0.06em;
+  line-height: 0.95;
+}
+
+h2 {
+  margin-bottom: 0;
+  font-size: 1.3rem;
+}
+
+.hero-copy,
+.muted,
+.field-help,
+.empty-state span,
+time {
+  color: #68728a;
+}
+
+.hero-copy {
+  font-size: 1.05rem;
+  line-height: 1.7;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1.25rem;
+}
+
+.panel {
+  border: 1px solid #e2e6f0;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 14px 40px rgba(37, 45, 75, 0.07);
+}
+
+.form-panel,
+.list-panel,
+.detail-panel {
+  padding: 1.5rem;
+}
+
+.section-heading {
+  margin-bottom: 1.5rem;
+}
+
+.heading-row,
+.detail-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+form {
+  display: grid;
+  gap: 0.55rem;
+}
+
+label {
+  margin-top: 0.5rem;
+  font-weight: 700;
+}
+
+input,
+textarea {
+  width: 100%;
+  border: 1px solid #cfd5e2;
+  border-radius: 10px;
+  padding: 0.8rem 0.9rem;
+  color: #16213a;
+  background: #fff;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+textarea {
+  resize: vertical;
+}
+
+input:focus,
+textarea:focus,
+button:focus-visible {
+  outline: none;
+  border-color: #5865f2;
+  box-shadow: 0 0 0 3px rgba(88, 101, 242, 0.18);
+}
+
+.field-help,
+.field-error {
+  margin-bottom: 0.4rem;
+  font-size: 0.85rem;
+}
+
+.field-error {
+  color: #b42318;
+}
+
+.primary-button {
+  margin-top: 0.7rem;
+  border: 0;
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  color: white;
+  background: #5865f2;
+  font-weight: 800;
+}
+
+.primary-button:hover:not(:disabled) {
+  background: #4652d8;
+}
+
+.status-message {
+  border: 1px solid #ced4ff;
+  border-radius: 10px;
+  padding: 0.8rem 1rem;
+  color: #303b99;
+  background: #eef0ff;
+}
+
+.count-badge,
+.detail-heading span {
+  border-radius: 999px;
+  padding: 0.35rem 0.65rem;
+  color: #3e49bd;
+  background: #eef0ff;
+  font-weight: 800;
+}
+
+.issue-list {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.issue-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.8rem;
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 0.85rem;
+  text-align: left;
+  color: inherit;
+  background: #f8f9fc;
+}
+
+.issue-row:hover,
+.issue-row[aria-pressed="true"] {
+  border-color: #b9c0ff;
+  background: #f1f2ff;
+}
+
+.issue-row strong,
+.issue-row small {
+  display: block;
+}
+
+.issue-row small {
+  margin-top: 0.3rem;
+  color: #68728a;
+}
+
+.issue-number {
+  color: #5865f2;
+  font-weight: 800;
+}
+
+.empty-state {
+  border: 1px dashed #cfd5e2;
+  border-radius: 12px;
+  padding: 2.5rem 1rem;
+  text-align: center;
+}
+
+.empty-state p {
+  margin-bottom: 0.3rem;
+  font-weight: 800;
+}
+
+.detail-panel {
+  margin-top: 1.25rem;
+}
+
+.detail-heading {
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+}
+
+.description {
+  margin: 1.25rem 0 0;
+  white-space: pre-wrap;
+  line-height: 1.7;
+}
+
+@media (max-width: 760px) {
+  .page-shell {
+    padding: 2.5rem 0;
+  }
+
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+}
