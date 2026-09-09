@@ -1,5 +1,0 @@
-hello:
-    echo "Hello world"
-
-ai-client:
-    python3 app/ai/client.py

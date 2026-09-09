@@ -14,4 +14,5 @@ dist/
 .DS_Store
 .vite/
 .env.example
-docs/
+
+.claude/
