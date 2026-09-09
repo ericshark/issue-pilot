@@ -1,7 +1,5 @@
 hello:
     echo "Hello world"
 
-activate:
-    source /home/eric/GitHub/issue-pilot/backend/.venv/bin/activate
-
-run
+ai-client:
+    python3 app/ai/client.py

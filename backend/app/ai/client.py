@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_MODEL = "claude-haiku-4-5-20251001"
-TEST_PROMPT = "what is 1 + 4 give in json format and result"
+TEST_PROMPT = "what is the year"
 
 
 def make_test_request() -> str:
