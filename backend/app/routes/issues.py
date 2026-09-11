@@ -6,6 +6,8 @@ from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Path, status
 
+from app.ai.schemas import TriageResponse
+from app.ai.service import TriageUnavailable, triage_issue
 from app.database import get_connection
 from app.models.issue import Issue, IssueCreate, IssueList
 
@@ -82,3 +84,17 @@ def get_issue(issue_id: Annotated[int, Path(ge=1)]) -> Issue:
         raise HTTPException(status_code=404, detail="Issue not found")
 
     return row_to_issue(row)
+
+
+@router.post("/{issue_id}/triage", response_model=TriageResponse)
+def triage(issue_id: Annotated[int, Path(ge=1)]) -> TriageResponse:
+    """Classify one stored issue with Claude without persisting the result."""
+
+    issue = get_issue(issue_id)
+
+    try:
+        result, model = triage_issue(issue.title, issue.description)
+    except TriageUnavailable as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
+
+    return TriageResponse(issue_id=issue.id, model=model, result=result)

@@ -44,3 +44,7 @@ export function createIssue(issue) {
 export function getIssue(issueId) {
   return request(`/api/issues/${issueId}`);
 }
+
+export function triageIssue(issueId) {
+  return request(`/api/issues/${issueId}/triage`, { method: "POST" });
+}

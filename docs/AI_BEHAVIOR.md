@@ -2,23 +2,23 @@
 
 ## Status
 
-AI triage is a later milestone. `backend/app/ai/client.py` contains only a
-standalone connectivity smoke test; it is not imported by FastAPI and does not
-read or modify issues. The repository also contains clearly marked locations
-for future schemas, service, tools, prompt, and evaluation cases, but they
-contain no executable triage behavior. There is no active triage prompt, route,
-database field, populated evaluation dataset, or product AI call in the current
-milestone. This document defines intended product behavior so future
-implementation can be reviewed against a clear boundary.
+AI triage is implemented as one advisory, on-demand route:
+`POST /api/issues/{issue_id}/triage`. It reads the stored title and description,
+calls Claude with the versioned prompt in `backend/app/ai/prompts/triage_v1.md`,
+validates the reply against the Pydantic schema in `backend/app/ai/schemas.py`,
+and returns it. Nothing is persisted: there is still no triage column, and the
+`Issue` shape is unchanged.
 
-This is a behavior contract, not an HTTP contract. A future API addition and
-any persistence changes require explicit approval and updates to
-`ARCHITECTURE.md` and `API_CONTRACT.md`.
+`backend/app/ai/client.py` remains a standalone connectivity smoke test,
+separate from this workflow. `evals/triage_cases.json` is still empty.
 
-## Intended input and output
+This document defines the behavior contract. The HTTP shape lives in
+`API_CONTRACT.md`. Persisting results would change both and requires approval.
 
-The classifier will receive the stored issue's title and description. It will
-return one structured result with:
+## Input and output
+
+The classifier receives the stored issue's title and description. It returns one
+structured result with:
 
 | Field | Intended meaning |
 | --- | --- |

@@ -4,6 +4,7 @@ import { ApiError, createIssue, getIssue, listIssues } from "./api.js";
 import IssueDetail from "./components/IssueDetail.jsx";
 import IssueForm from "./components/IssueForm.jsx";
 import IssueList from "./components/IssueList.jsx";
+import Button from "./components/Button.jsx";
 
 const EMPTY_FORM = { title: "", description: "" };
 
@@ -165,14 +166,14 @@ export default function App() {
           </span>
         </div>
 
-        <button
+        <Button
           type="button"
-          className="button button-primary button-compact"
+          className="button-compact"
           onClick={startNewIssue}
           disabled={view === "compose"}
         >
           New issue
-        </button>
+        </Button>
       </header>
 
       <div className="workspace">

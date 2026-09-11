@@ -158,6 +158,58 @@ Content-Type: application/json
 
 Internal exception and database details must not appear in the response.
 
+## Triage an issue
+
+`POST /api/issues/{issue_id}/triage`
+
+No request body. Classifies the stored issue with Claude and returns the result
+without persisting it. Every call re-runs the classification.
+
+Success: `200 OK` with a `TriageResponse`.
+
+```json
+{
+  "issue_id": 1,
+  "schema_version": "triage_v1",
+  "model": "claude-opus-5",
+  "result": {
+    "type": "bug",
+    "priority": "high",
+    "component": "auth",
+    "summary": "Clicking Log in with valid credentials has no effect.",
+    "rationale": "Describes functionality behaving incorrectly, but the report gives no evidence of how many users are affected.",
+    "suggested_next_action": "Ask the reporter for browser console errors and whether it reproduces in another browser."
+  }
+}
+```
+
+| Property | Type | Values |
+| --- | --- | --- |
+| `type` | string | `bug`, `feature_request`, `question`, `task` |
+| `priority` | string | `low`, `medium`, `high`, `critical` |
+| `component` | string | Short inferred component name, or `unknown` |
+| `summary` | string | Concise restatement of the report |
+| `rationale` | string | Justification for the classification |
+| `suggested_next_action` | string | One concrete next step for a reviewer |
+
+Unknown `issue_id` returns `404` with the not-found response above.
+
+When the classification cannot be produced or validated, the route returns
+`503 Service Unavailable` with a `detail` string. The backend never returns a
+fabricated or partially valid classification.
+
+```http
+HTTP/1.1 503 Service Unavailable
+Content-Type: application/json
+
+{
+  "detail": "Could not reach the Claude API."
+}
+```
+
+The result is advisory and is not stored, so it never appears on the `Issue`
+object returned by the other routes.
+
 ## Frontend behavior against the contract
 
 - Submit `IssueCreate` and use the returned `Issue`; do not synthesize IDs or
@@ -170,7 +222,8 @@ Internal exception and database details must not appear in the response.
 
 ## Not yet contracted
 
-There are no update, delete, status, health, authentication, or AI triage routes
-in this milestone. Adding one changes this contract and may also change product
-scope or architecture, so it requires approval and coordinated document updates.
+There are no update, delete, status, health, or authentication routes, and no
+persisted triage field on `Issue`. Adding one changes this contract and may also
+change product scope or architecture, so it requires approval and coordinated
+document updates.
 

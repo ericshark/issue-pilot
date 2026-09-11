@@ -1,3 +1,5 @@
+import Button from "./Button.jsx";
+
 const TITLE_LIMIT = 120;
 const DESCRIPTION_LIMIT = 5000;
 
@@ -97,9 +99,9 @@ export default function IssueForm({
             <kbd>↵</kbd>
             to submit
           </span>
-          <button className="button button-primary" type="submit" disabled={submitting}>
+          <Button type="submit" disabled={submitting}>
             {submitting ? "Saving…" : "Submit issue"}
-          </button>
+          </Button>
         </div>
       </form>
     </div>

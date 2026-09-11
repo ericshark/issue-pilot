@@ -1,4 +1,5 @@
 import { absoluteTime, relativeTime } from "../lib/format.js";
+import TriagePanel from "./TriagePanel.jsx";
 
 export default function IssueDetail({ issue, refreshing }) {
   return (
@@ -22,10 +23,7 @@ export default function IssueDetail({ issue, refreshing }) {
         <p className="detail-description">{issue.description}</p>
       </div>
 
-      <div className="triage-placeholder">
-        <span className="triage-badge">Coming soon</span>
-        <p>AI-assisted triage will summarize and categorize this issue in a later milestone.</p>
-      </div>
+      <TriagePanel issueId={issue.id} />
     </div>
   );
 }

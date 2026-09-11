@@ -1,4 +1,5 @@
 import { absoluteTime, excerpt, relativeTime } from "../lib/format.js";
+import FlowField from "./FlowField.jsx";
 
 function Skeleton() {
   return (
@@ -43,14 +44,12 @@ export default function IssueList({
       {loading ? (
         <Skeleton />
       ) : totalCount === 0 ? (
-        <div className="empty">
-          <div className="empty-mark" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path d="M4 5.5h16M4 12h16M4 18.5h10" strokeLinecap="round" />
-            </svg>
+        <div className="empty empty-art">
+          <FlowField className="empty-field" />
+          <div className="empty-body">
+            <p className="empty-title">No issues yet</p>
+            <p className="empty-copy">Your first report will show up here.</p>
           </div>
-          <p className="empty-title">No issues yet</p>
-          <p className="empty-copy">Your first report will show up here.</p>
         </div>
       ) : issues.length === 0 ? (
         <div className="empty">
