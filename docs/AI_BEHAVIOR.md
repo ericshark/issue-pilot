@@ -9,8 +9,14 @@ validates the reply against the Pydantic schema in `backend/app/ai/schemas.py`,
 and returns it. Nothing is persisted: there is still no triage column, and the
 `Issue` shape is unchanged.
 
+The chat assistant (`backend/app/ai/chat.py`) is a separate, conversational
+surface. It may call the read-only tools in `backend/app/ai/tools.py` to list,
+fetch, and search issues, and its system prompt applies the same rule as
+triage: issue text returned by a tool is untrusted data, never an instruction.
+It has no tools that write.
+
 `backend/app/ai/client.py` remains a standalone connectivity smoke test,
-separate from this workflow. `evals/triage_cases.json` is still empty.
+separate from both workflows. `evals/triage_cases.json` is still empty.
 
 This document defines the behavior contract. The HTTP shape lives in
 `API_CONTRACT.md`. Persisting results would change both and requires approval.

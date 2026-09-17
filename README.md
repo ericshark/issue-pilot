@@ -5,9 +5,10 @@ AI-assisted software development. The finished product will be a small React
 and FastAPI application where users submit software issues and review them. A
 later milestone will add Claude-powered issue triage.
 
-The issue-submission MVP runs, and Claude-powered triage is live as an
-advisory, on-demand route that does not store its results. A standalone API
-connectivity smoke test is also available for learning the Anthropic Python SDK.
+The issue-submission MVP runs, Claude-powered triage is live as an advisory,
+on-demand route that does not store its results, and a **Chat** page holds
+stored conversations with Claude. A standalone API connectivity smoke test is
+also available for learning the Anthropic Python SDK.
 
 ## Planned technology
 
@@ -40,18 +41,6 @@ Start with the product scope in `docs/SPEC.md`, then read
 `docs/ARCHITECTURE.md` to understand the system, and finally read
 `docs/API_CONTRACT.md` to see the data crossing the frontend/backend boundary.
 Read `docs/AI_BEHAVIOR.md` before changing triage behavior.
-
-## Rules for human contributors
-
-- Agree on product and architecture changes before asking an agent to implement
-  them.
-- Keep decisions in the document that owns them instead of relying on chat
-  history.
-- Review generated changes and understand them before committing.
-- Never commit `.env`, API keys, or the local SQLite database.
-- Prefer small tutorial milestones with a visible verification step.
-
-Coding-agent rules are intentionally separate in `AGENTS.md`.
 
 ## Tutorial milestones
 
@@ -135,3 +124,13 @@ Claude classifies the report's type, priority, and component, then suggests a
 next step. The result is advisory, is never written to the database, and is
 re-generated on each request. Set `ANTHROPIC_TRIAGE_MODEL` in `.env` to override
 the default model.
+
+## Chat
+
+The **Chat** button in the top bar opens a conversation with Claude that can
+read the tracker's issues: ask it what has been reported, to find issues about
+a topic, or to summarize one by number, and it looks them up with read-only
+tools (`backend/app/ai/tools.py`). It cannot change issues. Lookups are shown
+as chips in the reply. Conversations and their messages are stored in SQLite
+and listed in the sidebar, so any of them can be resumed. Set `ANTHROPIC_CHAT_MODEL` in `.env`
+to override the default model.

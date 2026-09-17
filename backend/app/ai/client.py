@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_MODEL = "claude-haiku-4-5-20251001"
-TEST_PROMPT = "what is the year"
+TEST_PROMPT = "tell me the first 20 amendments"
 
 
 def make_test_request() -> str:
@@ -28,7 +28,7 @@ def make_test_request() -> str:
     client = Anthropic()
     message = client.messages.create(
         model=os.getenv("ANTHROPIC_MODEL", DEFAULT_MODEL),
-        max_tokens=30,
+        max_tokens=300,
         messages=[{"role": "user", "content": TEST_PROMPT}],
     )
     text = "".join(block.text for block in message.content if block.type == "text")

@@ -210,6 +210,79 @@ Content-Type: application/json
 The result is advisory and is not stored, so it never appears on the `Issue`
 object returned by the other routes.
 
+## Chat
+
+Conversations with Claude are stored in two tables, `conversations` and
+`chat_messages`, and exposed under `/api/chat`. Timestamps use the same
+trailing-`Z` format as issues.
+
+### `Conversation`
+
+```json
+{ "id": 1, "title": "New chat", "created_at": "2026-09-16T14:30:00Z" }
+```
+
+A conversation starts titled `New chat` and is retitled from the first line of
+its first user message, truncated to 60 characters.
+
+### `ChatMessage`
+
+```json
+{
+  "id": 1,
+  "conversation_id": 1,
+  "role": "user",
+  "content": "What is IssuePilot?",
+  "created_at": "2026-09-16T14:30:00Z"
+}
+```
+
+`role` is `user` or `assistant`.
+
+### Routes
+
+| Method and path | Body | Success |
+| --- | --- | --- |
+| `POST /api/chat/conversations` | none | `201` with a `Conversation` |
+| `GET /api/chat/conversations` | none | `200` with `{ "items": [Conversation] }`, newest first |
+| `GET /api/chat/conversations/{id}` | none | `200` with a `Conversation` plus `"messages": [ChatMessage]`, oldest first |
+| `POST /api/chat/conversations/{id}/messages` | `{ "content": string }` | `200` `text/event-stream` (see below) |
+
+`content` is trimmed and must be 1-8,000 characters; blank input returns the
+standard `422` validation error. Unknown `{id}` returns `404` with
+`"Conversation not found"`.
+
+### Sending a message
+
+Sending passes the conversation's full stored history plus the new turn to
+Claude and streams the reply back as Server-Sent Events. The assistant can
+call read-only tools against the `issues` table while replying; it cannot
+create, edit, or delete anything. Each event is
+`event: <name>` followed by `data: <JSON>` and a blank line:
+
+| Event | Data | Meaning |
+| --- | --- | --- |
+| `delta` | `{ "text": string }` | One chunk of the reply, in order. Concatenate them. |
+| `tool` | `{ "name": string, "input": object }` | The assistant is reading issues: `list_issues` (`{limit}`), `get_issue` (`{issue_id}`), or `search_issues` (`{query, limit}`). Informational only; tool activity is not stored. |
+| `done` | `{ "user_message": ChatMessage, "assistant_message": ChatMessage }` | The reply finished and both turns are stored. Always the last event on success. |
+| `error` | `{ "detail": string }` | The reply could not be completed. Discard any `delta` text received; nothing was stored. Always the last event on failure. |
+
+```
+event: delta
+data: {"text": "Hi there,"}
+
+event: delta
+data: {"text": " friend!"}
+
+event: done
+data: {"user_message": {...}, "assistant_message": {...}}
+```
+
+A missing server API key is reported before the stream opens as a normal `503`
+with a `detail` string. Because both turns are written only once the reply is
+complete, any failed send leaves the conversation unchanged and can simply be
+retried.
+
 ## Frontend behavior against the contract
 
 - Submit `IssueCreate` and use the returned `Issue`; do not synthesize IDs or

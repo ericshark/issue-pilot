@@ -32,6 +32,8 @@ def get_connection() -> Generator[sqlite3.Connection, None, None]:
     database_path.parent.mkdir(parents=True, exist_ok=True)
     connection = sqlite3.connect(database_path)
     connection.row_factory = sqlite3.Row
+    # SQLite ignores REFERENCES clauses unless this is set per connection.
+    connection.execute("PRAGMA foreign_keys = ON")
 
     try:
         yield connection
@@ -51,6 +53,33 @@ def initialize_database() -> None:
                 description TEXT NOT NULL,
                 created_at TEXT NOT NULL
             )
+            """
+        )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS conversations (
+                id INTEGER PRIMARY KEY,
+                title TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            )
+            """
+        )
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS chat_messages (
+                id INTEGER PRIMARY KEY,
+                conversation_id INTEGER NOT NULL
+                    REFERENCES conversations(id) ON DELETE CASCADE,
+                role TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
+                content TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            )
+            """
+        )
+        connection.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_chat_messages_conversation
+            ON chat_messages (conversation_id, id)
             """
         )
         connection.commit()

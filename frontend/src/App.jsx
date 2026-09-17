@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { ApiError, createIssue, getIssue, listIssues } from "./api.js";
 import IssueDetail from "./components/IssueDetail.jsx";
 import IssueForm from "./components/IssueForm.jsx";
 import IssueList from "./components/IssueList.jsx";
 import Button from "./components/Button.jsx";
+import ChatPage from "./components/ChatPage.jsx";
 
 const EMPTY_FORM = { title: "", description: "" };
 
@@ -28,6 +29,16 @@ function errorMessage(error, fallback) {
     : fallback;
 }
 
+// The hash is the whole router: it survives reloads and gives the back button
+// something to do without pulling in a routing library.
+function pageFromHash() {
+  return window.location.hash === "#/chat" ? "chat" : "issues";
+}
+
+function goTo(page) {
+  window.location.hash = page === "chat" ? "#/chat" : "#/issues";
+}
+
 export default function App() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [issues, setIssues] = useState([]);
@@ -39,6 +50,17 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [loadingDetails, setLoadingDetails] = useState(false);
+  const [page, setPage] = useState(pageFromHash);
+
+  const notify = useCallback((text, tone = "success") => {
+    setToast({ id: Date.now(), text, tone });
+  }, []);
+
+  useEffect(() => {
+    const syncPage = () => setPage(pageFromHash());
+    window.addEventListener("hashchange", syncPage);
+    return () => window.removeEventListener("hashchange", syncPage);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -77,10 +99,6 @@ export default function App() {
         String(issue.id) === needle.replace("#", ""),
     );
   }, [issues, query]);
-
-  function notify(text, tone = "success") {
-    setToast({ id: Date.now(), text, tone });
-  }
 
   function updateField(event) {
     const { name, value } = event.target;
@@ -162,20 +180,46 @@ export default function App() {
           </span>
           <span className="brand-text">
             <strong>IssuePilot</strong>
-            <small>Software issue intake</small>
+            <small>{page === "chat" ? "Assistant" : "Software issue intake"}</small>
           </span>
         </div>
 
-        <Button
-          type="button"
-          className="button-compact"
-          onClick={startNewIssue}
-          disabled={view === "compose"}
-        >
-          New issue
-        </Button>
+        <div className="topbar-actions">
+          {page === "chat" ? (
+            <Button
+              type="button"
+              variant="ghost"
+              className="button-compact"
+              onClick={() => goTo("issues")}
+            >
+              Issues
+            </Button>
+          ) : (
+            <>
+              <Button
+                type="button"
+                variant="ghost"
+                className="button-compact"
+                onClick={() => goTo("chat")}
+              >
+                Chat
+              </Button>
+              <Button
+                type="button"
+                className="button-compact"
+                onClick={startNewIssue}
+                disabled={view === "compose"}
+              >
+                New issue
+              </Button>
+            </>
+          )}
+        </div>
       </header>
 
+      {page === "chat" ? (
+        <ChatPage notify={notify} errorMessage={errorMessage} />
+      ) : (
       <div className="workspace">
         <IssueList
           issues={filteredIssues}
@@ -201,6 +245,7 @@ export default function App() {
           )}
         </main>
       </div>
+      )}
 
       <div className="toast-region" role="status" aria-live="polite">
         {toast && (
