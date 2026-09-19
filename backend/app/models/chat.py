@@ -62,7 +62,8 @@ class ConversationList(BaseModel):
 
 
 class ChatReply(BaseModel):
-    """Both turns stored by one send: the user's and the assistant's."""
+    """Both turns stored by one send, plus the conversation's current title."""
 
     user_message: ChatMessage
     assistant_message: ChatMessage
+    conversation: Conversation

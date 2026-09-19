@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { ApiError, createIssue, getIssue, listIssues } from "./api.js";
 import IssueDetail from "./components/IssueDetail.jsx";
@@ -51,6 +51,9 @@ export default function App() {
   const [submitting, setSubmitting] = useState(false);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [page, setPage] = useState(pageFromHash);
+  // Counts detail requests so a slow response for an earlier click cannot
+  // overwrite the issue the user selected afterwards.
+  const selectRequest = useRef(0);
 
   const notify = useCallback((text, tone = "success") => {
     setToast({ id: Date.now(), text, tone });
@@ -79,7 +82,7 @@ export default function App() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [notify]);
 
   // Toasts clear themselves; the id keeps repeat messages from reusing a stale timer.
   useEffect(() => {
@@ -149,17 +152,21 @@ export default function App() {
   }
 
   async function handleSelect(issueId) {
+    const request = ++selectRequest.current;
     const known = issues.find((issue) => issue.id === issueId);
     if (known) setSelectedIssue(known);
     setView("detail");
     setLoadingDetails(true);
 
     try {
-      setSelectedIssue(await getIssue(issueId));
+      const issue = await getIssue(issueId);
+      if (request === selectRequest.current) setSelectedIssue(issue);
     } catch (error) {
-      notify(errorMessage(error, "Could not load that issue."), "error");
+      if (request === selectRequest.current) {
+        notify(errorMessage(error, "Could not load that issue."), "error");
+      }
     } finally {
-      setLoadingDetails(false);
+      if (request === selectRequest.current) setLoadingDetails(false);
     }
   }
 
@@ -175,7 +182,13 @@ export default function App() {
                 strokeWidth="1.6"
                 strokeLinejoin="round"
               />
-              <path d="m8.6 12 2.4 2.4 4.6-4.8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              <path
+                d="m8.6 12 2.4 2.4 4.6-4.8"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
           </span>
           <span className="brand-text">
@@ -220,31 +233,31 @@ export default function App() {
       {page === "chat" ? (
         <ChatPage notify={notify} errorMessage={errorMessage} />
       ) : (
-      <div className="workspace">
-        <IssueList
-          issues={filteredIssues}
-          totalCount={issues.length}
-          query={query}
-          onQueryChange={setQuery}
-          loading={loading}
-          selectedId={view === "detail" ? selectedIssue?.id : null}
-          onSelect={handleSelect}
-        />
+        <div className="workspace">
+          <IssueList
+            issues={filteredIssues}
+            totalCount={issues.length}
+            query={query}
+            onQueryChange={setQuery}
+            loading={loading}
+            selectedId={view === "detail" ? selectedIssue?.id : null}
+            onSelect={handleSelect}
+          />
 
-        <main className="main">
-          {view === "detail" && selectedIssue ? (
-            <IssueDetail issue={selectedIssue} refreshing={loadingDetails} />
-          ) : (
-            <IssueForm
-              form={form}
-              fieldErrors={fieldErrors}
-              submitting={submitting}
-              onFieldChange={updateField}
-              onSubmit={handleSubmit}
-            />
-          )}
-        </main>
-      </div>
+          <main className="main">
+            {view === "detail" && selectedIssue ? (
+              <IssueDetail issue={selectedIssue} refreshing={loadingDetails} />
+            ) : (
+              <IssueForm
+                form={form}
+                fieldErrors={fieldErrors}
+                submitting={submitting}
+                onFieldChange={updateField}
+                onSubmit={handleSubmit}
+              />
+            )}
+          </main>
+        </div>
       )}
 
       <div className="toast-region" role="status" aria-live="polite">

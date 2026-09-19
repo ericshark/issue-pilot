@@ -35,6 +35,23 @@ export default function ChatPage({ notify, errorMessage }) {
   const [sending, setSending] = useState(false);
   const threadRef = useRef(null);
   const composerRef = useRef(null);
+  // The stream runs outside React state, so it needs a ref to know whether the
+  // conversation it belongs to is still the one on screen when it finishes.
+  const activeIdRef = useRef(null);
+  const streamAbort = useRef(null);
+
+  function showConversation(conversationId) {
+    // Leaving a conversation mid-reply abandons that reply; nothing was stored.
+    if (streamAbort.current) {
+      streamAbort.current.abort();
+      streamAbort.current = null;
+      setSending(false);
+    }
+    activeIdRef.current = conversationId;
+    setActiveId(conversationId);
+  }
+
+  useEffect(() => () => streamAbort.current?.abort(), []);
 
   useEffect(() => {
     let active = true;
@@ -62,17 +79,19 @@ export default function ChatPage({ notify, errorMessage }) {
   }, [messages, sending]);
 
   async function openConversation(conversationId) {
-    setActiveId(conversationId);
+    showConversation(conversationId);
     setLoadingThread(true);
 
     try {
       const detail = await getConversation(conversationId);
-      setMessages(detail.messages);
+      if (activeIdRef.current === conversationId) setMessages(detail.messages);
     } catch (error) {
       notify(errorMessage(error, "Could not load that conversation."), "error");
     } finally {
-      setLoadingThread(false);
-      composerRef.current?.focus();
+      if (activeIdRef.current === conversationId) {
+        setLoadingThread(false);
+        composerRef.current?.focus();
+      }
     }
   }
 
@@ -80,7 +99,7 @@ export default function ChatPage({ notify, errorMessage }) {
     try {
       const created = await createConversation();
       setConversations((current) => [created, ...current]);
-      setActiveId(created.id);
+      showConversation(created.id);
       setMessages([]);
       composerRef.current?.focus();
       return created.id;
@@ -110,44 +129,57 @@ export default function ChatPage({ notify, errorMessage }) {
     setDraft("");
     setSending(true);
 
+    const controller = new AbortController();
+    streamAbort.current = controller;
+    // Every state update below is skipped once the user has moved to another
+    // conversation, so a late reply can never land in the wrong thread.
+    const stillActive = () => activeIdRef.current === conversationId;
+    const dropPlaceholders = (current) =>
+      current.filter((message) => message.id !== "pending" && message.id !== "streaming");
+
     try {
-      const patchStreaming = (update) =>
+      const patchStreaming = (update) => {
+        if (!stillActive()) return;
         setMessages((current) =>
           current.map((message) =>
             message.id === "streaming" ? { ...message, ...update(message) } : message,
           ),
         );
+      };
 
       const reply = await streamChatMessage(conversationId, content, {
         onDelta: (text) => patchStreaming((m) => ({ content: m.content + text })),
         onTool: (tool) => patchStreaming((m) => ({ tools: [...m.tools, tool] })),
+        signal: controller.signal,
       });
 
-      // Tool activity is not stored, so it is carried over locally for this session only.
-      setMessages((current) => {
-        const streamed = current.find((message) => message.id === "streaming");
-        return [
-          ...current.filter((message) => message.id !== "pending" && message.id !== "streaming"),
-          reply.user_message,
-          { ...reply.assistant_message, tools: streamed?.tools ?? [] },
-        ];
-      });
+      if (stillActive()) {
+        // Tool activity is not stored, so it is carried over locally for this session only.
+        setMessages((current) => {
+          const streamed = current.find((message) => message.id === "streaming");
+          return [
+            ...dropPlaceholders(current),
+            reply.user_message,
+            { ...reply.assistant_message, tools: streamed?.tools ?? [] },
+          ];
+        });
+      }
       setConversations((current) =>
         current.map((conversation) =>
-          conversation.id === conversationId && conversation.title === UNTITLED
-            ? { ...conversation, title: titleFrom(content) }
-            : conversation,
+          conversation.id === reply.conversation.id ? reply.conversation : conversation,
         ),
       );
     } catch (error) {
-      setMessages((current) =>
-        current.filter((message) => message.id !== "pending" && message.id !== "streaming"),
-      );
+      if (controller.signal.aborted) return;
+      setMessages(dropPlaceholders);
       setDraft(content);
       notify(errorMessage(error, "Could not send that message."), "error");
     } finally {
-      setSending(false);
-      composerRef.current?.focus();
+      if (streamAbort.current === controller) streamAbort.current = null;
+      if (stillActive()) {
+        setSending(false);
+        composerRef.current?.focus();
+      }
     }
   }
 
@@ -205,7 +237,8 @@ export default function ChatPage({ notify, errorMessage }) {
 
         <div className="sidebar-foot">
           <span>
-            {conversations.length} {conversations.length === 1 ? "conversation" : "conversations"}
+            {conversations.length}{" "}
+            {conversations.length === 1 ? "conversation" : "conversations"}
           </span>
         </div>
       </aside>
@@ -264,15 +297,29 @@ export default function ChatPage({ notify, errorMessage }) {
                             {message.tools.map((tool, index) => (
                               <li key={index} className="tool-chip">
                                 <svg viewBox="0 0 16 16" aria-hidden="true">
-                                  <circle cx="7" cy="7" r="4.2" fill="none" stroke="currentColor" strokeWidth="1.5" />
-                                  <path d="m10.2 10.2 3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                                  <circle
+                                    cx="7"
+                                    cy="7"
+                                    r="4.2"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="1.5"
+                                  />
+                                  <path
+                                    d="m10.2 10.2 3 3"
+                                    stroke="currentColor"
+                                    strokeWidth="1.5"
+                                    strokeLinecap="round"
+                                  />
                                 </svg>
                                 {toolLabel(tool)}
                               </li>
                             ))}
                           </ul>
                         )}
-                        {(message.content || !message.streaming) && <p>{message.content}</p>}
+                        {(message.content || !message.streaming) && (
+                          <p>{message.content}</p>
+                        )}
                       </div>
                     ),
                   )
@@ -307,10 +354,4 @@ export default function ChatPage({ notify, errorMessage }) {
       </main>
     </div>
   );
-}
-
-// Mirrors the backend's title rule so the sidebar updates without a refetch.
-function titleFrom(content) {
-  const firstLine = content.trim().split("\n")[0];
-  return firstLine.length <= 60 ? firstLine : `${firstLine.slice(0, 59).trimEnd()}…`;
 }

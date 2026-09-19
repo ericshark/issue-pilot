@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { ApiError, triageIssue } from "../api.js";
 import Button from "./Button.jsx";
@@ -18,17 +18,12 @@ const PRIORITY_LABELS = {
   critical: "Critical",
 };
 
+// Rendered with key={issueId} by IssueDetail, so switching issues remounts the
+// panel and starts from scratch: triage is never stored.
 export default function TriagePanel({ issueId }) {
   const [triage, setTriage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  // Triage is never stored, so a different issue always starts from scratch.
-  useEffect(() => {
-    setTriage(null);
-    setError("");
-    setLoading(false);
-  }, [issueId]);
 
   async function runTriage() {
     setLoading(true);
@@ -91,8 +86,8 @@ export default function TriagePanel({ issueId }) {
       <div className="triage-cta-body">
         <h3>AI triage</h3>
         <p>
-          Have Claude categorize this report and suggest a next step. Nothing is
-          stored, and a human still decides what happens.
+          Have Claude categorize this report and suggest a next step. Nothing is stored,
+          and a human still decides what happens.
         </p>
         {error && <p className="triage-error">{error}</p>}
         <Button onClick={runTriage} disabled={loading}>

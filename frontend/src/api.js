@@ -7,25 +7,27 @@ export class ApiError extends Error {
   }
 }
 
+// The backend always answers with JSON, but an empty body or a proxy error
+// page must not crash the caller, so parsing never throws.
+function parseBody(text) {
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
+async function toApiError(response) {
+  const body = parseBody(await response.text());
+  const detail = typeof body?.detail === "string" ? body.detail : "Request failed";
+  return new ApiError(detail, response.status, body);
+}
+
 async function request(path, options = {}) {
   const response = await fetch(path, options);
-  const text = await response.text();
-  let body = null;
-
-  if (text) {
-    try {
-      body = JSON.parse(text);
-    } catch {
-      body = null;
-    }
-  }
-
-  if (!response.ok) {
-    const detail = typeof body?.detail === "string" ? body.detail : "Request failed";
-    throw new ApiError(detail, response.status, body);
-  }
-
-  return body;
+  if (!response.ok) throw await toApiError(response);
+  return parseBody(await response.text());
 }
 
 export async function listIssues() {
@@ -75,24 +77,20 @@ function parseEvent(block) {
 
 // Sends one turn and resolves with the stored ChatReply once the stream ends.
 // onDelta receives each text chunk; onTool receives {name, input} per lookup.
-export async function streamChatMessage(conversationId, content, { onDelta, onTool }) {
+// Pass an AbortSignal to stop reading when the caller no longer wants the reply.
+export async function streamChatMessage(
+  conversationId,
+  content,
+  { onDelta, onTool, signal },
+) {
   const response = await fetch(`/api/chat/conversations/${conversationId}/messages`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ content }),
+    signal,
   });
 
-  if (!response.ok) {
-    const text = await response.text();
-    let body = null;
-    try {
-      body = JSON.parse(text);
-    } catch {
-      body = null;
-    }
-    const detail = typeof body?.detail === "string" ? body.detail : "Request failed";
-    throw new ApiError(detail, response.status, body);
-  }
+  if (!response.ok) throw await toApiError(response);
 
   const reader = response.body.getReader();
   const decoder = new TextDecoder();

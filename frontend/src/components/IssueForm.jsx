@@ -39,7 +39,12 @@ export default function IssueForm({
         </div>
       </div>
 
-      <form className="issue-form" onSubmit={onSubmit} onKeyDown={handleKeyDown} noValidate>
+      <form
+        className="issue-form"
+        onSubmit={onSubmit}
+        onKeyDown={handleKeyDown}
+        noValidate
+      >
         <div className="field">
           <div className="field-head">
             <label htmlFor="title">Title</label>
@@ -74,9 +79,7 @@ export default function IssueForm({
             value={form.description}
             onChange={onFieldChange}
             maxLength={DESCRIPTION_LIMIT}
-            placeholder={
-              "Steps to reproduce\n1. …\n\nExpected\n…\n\nActual\n…"
-            }
+            placeholder={"Steps to reproduce\n1. …\n\nExpected\n…\n\nActual\n…"}
             aria-describedby={
               fieldErrors.description ? "description-error" : "description-help"
             }

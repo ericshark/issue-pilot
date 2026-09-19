@@ -4,30 +4,23 @@ Run from ``backend/`` with ``python -m app.ai.client``. This module is not
 connected to the FastAPI application or the issue-triage workflow.
 """
 
-import os
-from pathlib import Path
+from anthropic import APIError
 
-from anthropic import Anthropic, APIError
-from dotenv import load_dotenv
+from app.config import MissingApiKey, get_client, get_smoke_test_model
 
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
-DEFAULT_MODEL = "claude-haiku-4-5-20251001"
 TEST_PROMPT = "tell me the first 20 amendments"
 
 
 def make_test_request() -> str:
     """Send one small request and return the model's text response."""
 
-    load_dotenv(PROJECT_ROOT / ".env")
+    try:
+        client = get_client()
+    except MissingApiKey as error:
+        raise RuntimeError(f"{error} Add it to the repository's .env file.") from error
 
-    if not os.getenv("ANTHROPIC_API_KEY"):
-        raise RuntimeError(
-            "ANTHROPIC_API_KEY is missing. Add it to the repository's .env file."
-        )
-
-    client = Anthropic()
     message = client.messages.create(
-        model=os.getenv("ANTHROPIC_MODEL", DEFAULT_MODEL),
+        model=get_smoke_test_model(),
         max_tokens=300,
         messages=[{"role": "user", "content": TEST_PROMPT}],
     )

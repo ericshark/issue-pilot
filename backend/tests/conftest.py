@@ -6,7 +6,18 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
+from app.config import get_client
 from app.main import app
+
+
+@pytest.fixture(autouse=True)
+def isolated_config(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
+    """Start every test without an API key and without a cached client."""
+
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    get_client.cache_clear()
+    yield
+    get_client.cache_clear()
 
 
 @pytest.fixture

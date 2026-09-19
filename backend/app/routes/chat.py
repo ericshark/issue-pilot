@@ -6,6 +6,7 @@ from collections.abc import Iterator
 from datetime import datetime, timezone
 from typing import Annotated
 
+from anthropic.types import MessageParam
 from fastapi import APIRouter, HTTPException, Path, status
 from fastapi.responses import StreamingResponse
 
@@ -159,13 +160,14 @@ def send_message(
 
     Events: ``delta`` with ``{"text"}`` for each chunk and ``tool`` with
     ``{"name", "input"}`` for each issue lookup, then either ``done`` with a
-    ``ChatReply`` or ``error`` with ``{"detail"}``. Nothing is written until
+    ``ChatReply`` (both stored turns and the conversation, whose title may
+    have just been set) or ``error`` with ``{"detail"}``. Nothing is written until
     the reply completes, so a failed send can simply be retried.
     """
 
     with get_connection() as connection:
         conversation = fetch_conversation(connection, conversation_id)
-        history = [
+        history: list[MessageParam] = [
             {"role": message.role, "content": message.content}
             for message in fetch_messages(connection, conversation_id)
         ]
@@ -209,8 +211,13 @@ def send_message(
                 )
 
             connection.commit()
+            updated = fetch_conversation(connection, conversation_id)
 
-        done = ChatReply(user_message=user_message, assistant_message=assistant_message)
+        done = ChatReply(
+            user_message=user_message,
+            assistant_message=assistant_message,
+            conversation=updated,
+        )
         yield sse("done", done.model_dump(mode="json"))
 
     return StreamingResponse(

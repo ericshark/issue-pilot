@@ -23,7 +23,7 @@ export default function IssueDetail({ issue, refreshing }) {
         <p className="detail-description">{issue.description}</p>
       </div>
 
-      <TriagePanel issueId={issue.id} />
+      <TriagePanel key={issue.id} issueId={issue.id} />
     </div>
   );
 }

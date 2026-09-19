@@ -1,7 +1,6 @@
 """Validated schemas for AI issue triage.
 
-The controlled vocabularies here are the enums promised in
-``docs/AI_BEHAVIOR.md``. ``Literal`` is used rather than ``enum.Enum`` so the
+``Literal`` is used rather than ``enum.Enum`` so the
 generated JSON Schema inlines the allowed values instead of emitting ``$ref``
 indirection, which the structured-output API does not accept.
 """

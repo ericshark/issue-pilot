@@ -1,13 +1,8 @@
-## Python quality checks
+# Agent rules
 
-- Changed Python code must pass Ruff formatting, Ruff linting, and Pyright.
-- Resolve diagnostics instead of suppressing them unless a suppression is
-  documented and justified.
-- Before handing off backend changes, run from `backend/`:
-
-  ```bash
-  python -m ruff format --check .
-  python -m ruff check .
-  python -m pyright
-  python -m pytest
-  ```
+- Backend changes must pass, from `backend/`: `ruff format --check .`,
+  `ruff check .`, `pyright`, `pytest`.
+- Frontend changes must pass, from `frontend/`: `npm run lint`,
+  `npm run format:check`, `npm test`, `npm run build`.
+- Fix diagnostics rather than suppressing them.
+- Do not commit or push unless asked.

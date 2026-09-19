@@ -28,8 +28,20 @@ export default function IssueList({
       <div className="sidebar-head">
         <div className="search">
           <svg className="search-icon" viewBox="0 0 20 20" aria-hidden="true">
-            <circle cx="9" cy="9" r="5.5" fill="none" stroke="currentColor" strokeWidth="1.7" />
-            <path d="M13.2 13.2 17 17" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+            <circle
+              cx="9"
+              cy="9"
+              r="5.5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.7"
+            />
+            <path
+              d="M13.2 13.2 17 17"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              strokeLinecap="round"
+            />
           </svg>
           <input
             type="search"
@@ -54,9 +66,7 @@ export default function IssueList({
       ) : issues.length === 0 ? (
         <div className="empty">
           <p className="empty-title">No matches</p>
-          <p className="empty-copy">
-            Nothing matches “{query}”. Try a different search.
-          </p>
+          <p className="empty-copy">Nothing matches “{query}”. Try a different search.</p>
         </div>
       ) : (
         <ul className="issue-list">
@@ -70,7 +80,10 @@ export default function IssueList({
               >
                 <span className="issue-row-top">
                   <span className="issue-id">#{issue.id}</span>
-                  <time dateTime={issue.created_at} title={absoluteTime(issue.created_at)}>
+                  <time
+                    dateTime={issue.created_at}
+                    title={absoluteTime(issue.created_at)}
+                  >
                     {relativeTime(issue.created_at)}
                   </time>
                 </span>

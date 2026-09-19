@@ -1,11 +1,22 @@
-hello:
-    echo "Hello world"
+root := justfile_directory()
 
-ai-client:
-    python3 backend/app/ai/client.py
-
+# Run the backend API with auto-reload.
 backend:
-    cd /home/eric/GitHub/issue-pilot/backend && python -m uvicorn app.main:app --reload
+    cd {{root}}/backend && .venv/bin/python -m uvicorn app.main:app --reload
 
+# Run the Vite dev server.
 frontend:
-    cd /home/eric/GitHub/issue-pilot/frontend && npm run dev
+    cd {{root}}/frontend && npm run dev
+
+# Claude API connectivity smoke test.
+ai-client:
+    cd {{root}}/backend && .venv/bin/python -m app.ai.client
+
+# Run the triage eval cases (needs ANTHROPIC_API_KEY).
+evals:
+    cd {{root}}/backend && .venv/bin/python -m scripts.run_evals
+
+# Every check CI runs.
+check:
+    cd {{root}}/backend && .venv/bin/python -m ruff format --check . && .venv/bin/python -m ruff check . && .venv/bin/python -m pyright && .venv/bin/python -m pytest
+    cd {{root}}/frontend && npm run lint && npm run format:check && npm test && npm run build

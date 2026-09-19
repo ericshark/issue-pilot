@@ -1,136 +1,94 @@
 # IssuePilot
 
-IssuePilot is a hands-on tutorial project for learning professional,
-AI-assisted software development. The finished product will be a small React
-and FastAPI application where users submit software issues and review them. A
-later milestone will add Claude-powered issue triage.
+A small tutorial project for learning AI-assisted development: a React
+frontend and a FastAPI/SQLite backend where users submit software issues,
+plus two Claude-powered features, on-demand **triage** and a **chat**
+assistant that can read the issues.
 
-The issue-submission MVP runs, Claude-powered triage is live as an advisory,
-on-demand route that does not store its results, and a **Chat** page holds
-stored conversations with Claude. A standalone API connectivity smoke test is
-also available for learning the Anthropic Python SDK.
+## Stack
 
-## Planned technology
+React 19 + Vite · FastAPI + Pydantic · SQLite (`sqlite3`) · Anthropic Python
+SDK · Pytest, Vitest · GitHub Actions
 
-- React with Vite and JavaScript
-- FastAPI and Pydantic
-- SQLite, accessed with Python's standard `sqlite3` module for the MVP
-- Pytest
-- Anthropic Python SDK for Claude
-- GitHub Actions in a later milestone
-
-## Document map
-
-Each file has one audience and one job:
-
-- `README.md` helps humans understand the repository and learning sequence.
-- `AGENTS.md` gives coding agents repository-specific operating rules.
-- `.env.example` documents configuration names without holding secrets.
-- `.gitignore` keeps local and generated files out of version control.
-- `docs/SPEC.md` defines product scope, user behavior, and acceptance criteria.
-- `docs/ARCHITECTURE.md` records system boundaries and technical decisions.
-- `docs/API_CONTRACT.md` is the exact agreement between frontend and backend.
-- `docs/AI_BEHAVIOR.md` defines the classifier's responsibilities and safety
-  boundaries.
-- `docs/HOW_IT_WORKS.md` explains every file and follows a request through the
-  frontend, API, and database.
-
-## Recommended reading order
-
-Start with the product scope in `docs/SPEC.md`, then read
-`docs/ARCHITECTURE.md` to understand the system, and finally read
-`docs/API_CONTRACT.md` to see the data crossing the frontend/backend boundary.
-Read `docs/AI_BEHAVIOR.md` before changing triage behavior.
-
-## Tutorial milestones
-
-1. Agree on documentation and interfaces. **Complete.**
-2. Build and test the FastAPI/SQLite issue API. **Current milestone.**
-3. Build the React interface against the agreed API. **Current milestone.**
-4. Add structured AI triage and evaluation cases. **Triage complete; evaluation
-   cases still to do.**
-5. Expand the basic CI workflow as additional checks become useful.
-
-Architecture changes require the repository owner's approval before they are
-implemented or recorded as decisions.
-
-## Run the backend
-
-From the repository root:
+## Run it
 
 ```bash
+cp .env.example .env        # add ANTHROPIC_API_KEY for triage and chat
+
 cd backend
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements-dev.txt
-python -m uvicorn app.main:app --reload
-```
-
-The API is available at `http://127.0.0.1:8000`; interactive API documentation
-is at `http://127.0.0.1:8000/docs`.
-
-## Run the frontend
-
-In a second terminal:
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Open `http://127.0.0.1:5173`. Vite forwards `/api` requests to the backend.
-
-## Run the checks
-
-```bash
-cd backend
-python -m ruff format --check .
-python -m ruff check .
-python -m pyright
-python -m pytest
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements-dev.txt
+python -m uvicorn app.main:app --reload     # http://127.0.0.1:8000
 
 cd ../frontend
-npm run build
+npm install
+npm run dev                                  # http://127.0.0.1:5173
 ```
 
-## Test the Claude API connection
+Vite proxies `/api` to the backend. With [just](https://github.com/casey/just)
+installed: `just backend`, `just frontend`, `just check`, `just evals`.
 
-Add `ANTHROPIC_API_KEY` to the repository's ignored `.env` file, install the
-backend dependencies, and run:
+## Checks
 
 ```bash
-cd backend
-source .venv/bin/activate
-python -m pip install -r requirements-dev.txt
-python -m app.ai.client
+cd backend && ruff format --check . && ruff check . && pyright && pytest
+cd frontend && npm run lint && npm run format:check && npm test && npm run build
 ```
 
-This sends one short Claude Messages API request and prints the returned text. It is
-not connected to FastAPI, stored issues, or the triage feature. Override
-the default model by setting `ANTHROPIC_MODEL` in `.env`.
+CI runs the same on every PR.
 
-## Run AI triage
+## How it works
 
-Triage needs `ANTHROPIC_API_KEY` in the repository's ignored `.env` file. With
-the backend running, open any issue in the UI and choose **Run AI triage**, or
-call the route directly:
-
-```bash
-curl -X POST http://127.0.0.1:8000/api/issues/1/triage
+```text
+Browser -> React SPA -> /api (JSON, SSE) -> FastAPI -> SQLite
+                                                   -> Claude (triage, chat)
 ```
 
-Claude classifies the report's type, priority, and component, then suggests a
-next step. The result is advisory, is never written to the database, and is
-re-generated on each request. Set `ANTHROPIC_TRIAGE_MODEL` in `.env` to override
-the default model.
+- `backend/app/routes/` owns HTTP; `models/` are the Pydantic shapes;
+  `database.py` opens one SQLite connection per request; `config.py` reads
+  `.env`.
+- `ai/service.py` is triage: one structured-output call with the prompt in
+  `ai/prompts/triage_v1.md`. Results are returned, never stored.
+- `ai/chat.py` streams a reply and runs the read-only tools in `ai/tools.py`
+  (`list_issues`, `get_issue`, `search_issues`) when the model asks. The
+  assistant cannot change issues. Both turns are stored only after the reply
+  finishes, so a failed send can be retried.
+- Issue text is user data. Both prompts tell the model to treat it as data,
+  never instructions.
+- `frontend/src/api.js` is the only module that calls the backend; the hash
+  (`#/issues`, `#/chat`) is the router.
 
-## Chat
+## API
 
-The **Chat** button in the top bar opens a conversation with Claude that can
-read the tracker's issues: ask it what has been reported, to find issues about
-a topic, or to summarize one by number, and it looks them up with read-only
-tools (`backend/app/ai/tools.py`). It cannot change issues. Lookups are shown
-as chips in the reply. Conversations and their messages are stored in SQLite
-and listed in the sidebar, so any of them can be resumed. Set `ANTHROPIC_CHAT_MODEL` in `.env`
-to override the default model.
+All routes are JSON under `/api`. Errors are `{"detail": "..."}`; validation
+errors use FastAPI's default list shape.
+
+| Method | Path | Body | Returns |
+| --- | --- | --- | --- |
+| `POST` | `/api/issues` | `{title, description}` | `201` Issue |
+| `GET` | `/api/issues` | | `{items: Issue[]}` newest first |
+| `GET` | `/api/issues/{id}` | | Issue, or `404` |
+| `POST` | `/api/issues/{id}/triage` | | `{issue_id, schema_version, model, result}`, or `503` |
+| `POST` | `/api/chat/conversations` | | `201` Conversation |
+| `GET` | `/api/chat/conversations` | | `{items: Conversation[]}` newest first |
+| `GET` | `/api/chat/conversations/{id}` | | Conversation + `messages[]` |
+| `POST` | `/api/chat/conversations/{id}/messages` | `{content}` | SSE stream |
+
+Shapes: `Issue {id, title, description, created_at}`,
+`Conversation {id, title, created_at}`,
+`ChatMessage {id, conversation_id, role, content, created_at}`.
+Limits: title 1–120, description 1–5,000, chat content 1–8,000 chars, trimmed.
+
+Triage `result`: `type` ∈ bug | feature_request | question | task,
+`priority` ∈ low | medium | high | critical, plus `component`, `summary`,
+`rationale`, `suggested_next_action`.
+
+SSE events: `delta {text}` per chunk, `tool {name, input}` per lookup, then
+`done {user_message, assistant_message, conversation}` or `error {detail}`
+(nothing stored; resend to retry).
+
+## Evals
+
+`evals/triage_cases.json` holds a few labelled reports. `just evals` (or
+`cd backend && python -m scripts.run_evals`) runs them through the real
+triage prompt and prints pass/fail. Needs an API key; not run in CI.

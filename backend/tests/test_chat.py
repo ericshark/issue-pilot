@@ -82,6 +82,8 @@ def test_send_message_stores_both_turns_and_titles_conversation(
     assert body["user_message"]["content"] == "What is IssuePilot?"
     assert body["assistant_message"]["role"] == "assistant"
     assert body["assistant_message"]["content"] == "Stubbed reply"
+    assert body["conversation"]["id"] == conversation_id
+    assert body["conversation"]["title"] == "What is IssuePilot?"
     assert stub_reply == [[{"role": "user", "content": "What is IssuePilot?"}]]
 
     detail = client.get(f"/api/chat/conversations/{conversation_id}").json()
@@ -151,13 +153,9 @@ def test_mid_stream_failure_emits_error_and_stores_nothing(
     )
 
 
-def test_missing_api_key_is_a_plain_503(
-    client: TestClient, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    def unconfigured() -> None:
-        raise ChatUnavailable("ANTHROPIC_API_KEY is not configured on the server.")
-
-    monkeypatch.setattr(chat_routes, "ensure_configured", unconfigured)
+def test_missing_api_key_is_a_plain_503(client: TestClient) -> None:
+    # No stub: the autouse fixture clears ANTHROPIC_API_KEY, so the real
+    # ensure_configured runs and must fail before any stream opens.
     conversation_id = client.post("/api/chat/conversations").json()["id"]
 
     response = client.post(

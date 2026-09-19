@@ -1,27 +1,10 @@
 """SQLite connection and schema setup for IssuePilot."""
 
-import os
 import sqlite3
 from collections.abc import Generator
 from contextlib import contextmanager
-from pathlib import Path
 
-from dotenv import load_dotenv
-
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_DATABASE_PATH = PROJECT_ROOT / "backend" / "issuepilot.db"
-load_dotenv(PROJECT_ROOT / ".env")
-
-
-def get_database_path() -> Path:
-    """Return the configured database path, anchored to the repository root."""
-
-    configured_path = os.getenv("DATABASE_PATH")
-    if not configured_path:
-        return DEFAULT_DATABASE_PATH
-
-    path = Path(configured_path).expanduser()
-    return path if path.is_absolute() else PROJECT_ROOT / path
+from app.config import get_database_path
 
 
 @contextmanager

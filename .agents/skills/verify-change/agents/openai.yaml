@@ -1,4 +1,0 @@
-interface:
-  display_name: "Verify Change"
-  short_description: "Run IssuePilot checks before handoff"
-  default_prompt: "Verify the current IssuePilot change and report the checks, results, and remaining risks."

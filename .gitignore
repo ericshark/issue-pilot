@@ -13,7 +13,6 @@ node_modules/
 dist/
 .DS_Store
 .vite/
-.env.example
 
 .claude/
 .codex/
